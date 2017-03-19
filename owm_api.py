@@ -13,7 +13,7 @@ def convert_time(timestamp):
     local_dt = local_tz.localize(timestamp, is_dst=False)
     utc_dt = local_dt.astimezone(target_tz)
     utc_datetime =  suffixed_conversion('%I:%M%p, %B {D}', utc_dt)
-    return utc_datetime
+    return utc_dt
 
 # proper suffixing for timestamp conversion.
 def suffix_day(day):
@@ -21,6 +21,9 @@ def suffix_day(day):
 
 def suffixed_conversion(format, timestamp):
     return timestamp.strftime(format).replace('{D}', str(timestamp.day) + suffix_day(timestamp.day))
+
+def format_hour(timestamp):
+    return timestamp.strftime('%H')
 # construct the uri
 
 def url_builder(city_id, api_key):
@@ -39,20 +42,23 @@ def filter_json(json):
     sys = json.get('sys')
     sunrise = sys.get('sunrise')
     sunset = sys.get('sunset')
-
-    current_time = convert_time(int(json.get('dt')))
-    sunrise = convert_time(int(sunrise))
-    sunset = convert_time(int(sunset))
+    current_time_full=suffixed_conversion('%I:%M%p, %B {D}', convert_time(int(json.get('dt'))))
+    current_hour = format_hour(convert_time(int(json.get('dt'))))
+    sunrise = format_hour(convert_time(int(sunrise)))
+    sunset = format_hour(convert_time(int(sunset)))
     # for some reason there's a list nested...
     weather_desc = json.get('weather')[0].get('description')
     current_temp = json.get('main').get('temp')
     #The temp is X.XX so round it so it's a whole number
     current_temp = round(current_temp, 0)
+    name = json.get('name')
 
     weather_values = dict(temperature=current_temp,
     description=weather_desc,
-    current_time=current_time,
+    current_time=current_time_full,
+    current_hour = current_hour,
     sunrise=sunrise,
-    sunset=sunset)
+    sunset=sunset,
+    city=name)
 
     return weather_values
